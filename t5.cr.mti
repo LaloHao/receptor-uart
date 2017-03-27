@@ -1,0 +1,13 @@
+E:/verif/t5/UART_TX.v {0 {vlog -work work -vopt E:/verif/t5/UART_TX.v
+QuestaSim vlog 10.2c Compiler 2013.07 Jul 18 2013
+-- Compiling module uart_tx
+** Error: E:/verif/t5/UART_TX.v(94): near "endmodule": syntax error, unexpected endmodule
+
+} {4.0 5.0} {}} E:/verif/t5/receptor_tb.v {1 {vlog -work work -vopt E:/verif/t5/receptor_tb.v
+QuestaSim vlog 10.2c Compiler 2013.07 Jul 18 2013
+-- Compiling module receptor_Uart
+
+Top level modules:
+	receptor_Uart
+
+} {} {}}

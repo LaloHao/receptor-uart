@@ -1,0 +1,95 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{module} \PYG{n}{receptor}
+  \PYG{p}{\PYGZsh{}(}\PYG{k}{parameter} \PYG{n+no}{DATA\PYGZus{}LENGHT} \PYG{o}{=} \PYG{l+m+mh}{8}\PYG{p}{,}  \PYG{c+c1}{// Datos de 8 bits}
+    \PYG{k}{parameter} \PYG{n+no}{DELAY\PYGZus{}TIME} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{)}   \PYG{c+c1}{// 50Mhz/5208=9600.61443932bps}
+   \PYG{p}{(}\PYG{k}{input} \PYG{k+kt}{wire}                   \PYG{n}{RxD}\PYG{p}{,}
+    \PYG{k}{input} \PYG{k+kt}{wire}                   \PYG{n}{rdrf\PYGZus{}clr}\PYG{p}{,} \PYG{n}{clk}\PYG{p}{,} \PYG{n}{reset}\PYG{p}{,}
+    \PYG{k}{input} \PYG{k+kt}{wire} \PYG{p}{[}\PYG{l+m+mh}{1}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}             \PYG{n}{parity}\PYG{p}{,}
+    \PYG{k}{output} \PYG{k+kt}{reg} \PYG{p}{[}\PYG{n+no}{DATA\PYGZus{}LENGHT}\PYG{o}{\PYGZhy{}}\PYG{l+m+mh}{1}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]} \PYG{n}{rx\PYGZus{}data}\PYG{p}{,}
+    \PYG{k}{output} \PYG{k+kt}{reg}                   \PYG{n}{rdrf}\PYG{p}{,} \PYG{n+no}{FE}\PYG{p}{);}
+
+   \PYG{k+kt}{reg} \PYG{p}{[}\PYG{l+m+mh}{1}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}                     \PYG{n}{currentState}\PYG{p}{,} \PYG{n}{nextState}\PYG{p}{;}
+
+   \PYG{k}{localparam} \PYG{n+no}{START} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{,} \PYG{n+no}{READ} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{,} \PYG{n+no}{CHECK} \PYG{o}{=} \PYG{l+m+mh}{2}\PYG{p}{,} \PYG{n+no}{DELAY} \PYG{o}{=} \PYG{l+m+mh}{3}\PYG{p}{;} \PYG{c+c1}{// Estados}
+
+   \PYG{k+kt}{reg} \PYG{p}{[}\PYG{n+no}{DATA\PYGZus{}LENGHT}\PYG{o}{+}\PYG{l+m+mh}{1}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}         \PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{;}      \PYG{c+c1}{// Registro temporal de datos}
+   \PYG{k+kt}{reg}                           \PYG{n}{done}\PYG{p}{;}             \PYG{c+c1}{// Bandera de finalizacion de lectura de datos}
+   \PYG{k+kt}{reg} \PYG{p}{[}\PYG{l+m+mh}{14}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}                    \PYG{n}{clk\PYGZus{}div}\PYG{p}{,} \PYG{n}{clk\PYGZus{}out}\PYG{p}{;} \PYG{c+c1}{// Divisor de frecuencia}
+   \PYG{k+kt}{reg} \PYG{p}{[}\PYG{l+m+mh}{3}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}                     \PYG{n}{cnt}\PYG{p}{;}              \PYG{c+c1}{// Contador de para recibir datos y parity check}
+   \PYG{k+kt}{reg}                           \PYG{n}{checked}\PYG{p}{;}          \PYG{c+c1}{// Bandera de finalizacion de parity check}
+   \PYG{k+kt}{reg} \PYG{p}{[}\PYG{l+m+mh}{4}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{]}                     \PYG{n}{ones}\PYG{p}{;}             \PYG{c+c1}{// Cuenta cuantos \PYGZsq{}1\PYGZsq{} existen}
+   \PYG{k+kt}{reg}                           \PYG{n}{parity\PYGZus{}error}\PYG{p}{;}     \PYG{c+c1}{// Bandera que designa error en paridad}
+
+   \PYG{k}{always} \PYG{p}{@(}\PYG{k}{posedge} \PYG{n}{clk}\PYG{p}{,} \PYG{k}{posedge} \PYG{n}{reset}\PYG{p}{)}
+     \PYG{k}{if} \PYG{p}{(}\PYG{n}{reset}\PYG{p}{)}       \PYG{n}{currentState} \PYG{o}{\PYGZlt{}=} \PYG{n+no}{START}\PYG{p}{;}
+     \PYG{k}{else}             \PYG{n}{currentState} \PYG{o}{\PYGZlt{}=} \PYG{n}{nextState}\PYG{p}{;}
+
+   \PYG{k}{always} \PYG{p}{@(}\PYG{k}{posedge} \PYG{n}{rdrf\PYGZus{}clr}\PYG{p}{)}
+     \PYG{n}{rdrf} \PYG{o}{\PYGZlt{}=} \PYG{l+m+mh}{0}\PYG{p}{;}
+
+   \PYG{k}{always} \PYG{p}{@(}\PYG{k}{posedge} \PYG{n}{clk}\PYG{p}{)}                     \PYG{c+c1}{// Control de estados}
+     \PYG{k}{case} \PYG{p}{(}\PYG{n}{currentState}\PYG{p}{)}
+       \PYG{n+nl}{START:}
+         \PYG{k}{if} \PYG{p}{(}\PYG{n}{RxD}\PYG{p}{)}     \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{START}\PYG{p}{;}
+         \PYG{k}{else}         \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{DELAY}\PYG{p}{;}
+       \PYG{n+nl}{DELAY:}
+         \PYG{k}{if} \PYG{p}{(}\PYG{n}{clk\PYGZus{}out}\PYG{p}{)} \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{READ}\PYG{p}{;}
+         \PYG{k}{else}         \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{DELAY}\PYG{p}{;}
+       \PYG{n+nl}{READ:}
+         \PYG{k}{if} \PYG{p}{(}\PYG{n}{done}\PYG{p}{)}    \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{CHECK}\PYG{p}{;}
+         \PYG{k}{else}         \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{DELAY}\PYG{p}{;}
+       \PYG{n+nl}{CHECK:}
+         \PYG{k}{if} \PYG{p}{(}\PYG{n}{checked}\PYG{p}{)} \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{START}\PYG{p}{;}
+         \PYG{k}{else}         \PYG{n}{nextState} \PYG{o}{=} \PYG{n+no}{CHECK}\PYG{p}{;}
+     \PYG{k}{endcase} \PYG{c+c1}{// case (currentState)}
+
+   \PYG{k}{always} \PYG{p}{@(}\PYG{n}{currentState}\PYG{p}{)}                     \PYG{c+c1}{// Flujo de datos}
+     \PYG{k}{case} \PYG{p}{(}\PYG{n}{currentState}\PYG{p}{)}
+       \PYG{n+nl}{START:}
+         \PYG{k}{begin}
+            \PYG{p}{\PYGZob{}}\PYG{n}{rx\PYGZus{}data}\PYG{p}{,} \PYG{n}{rdrf}\PYG{p}{,} \PYG{n+no}{FE}\PYG{p}{,} \PYG{n}{ones}\PYG{p}{\PYGZcb{}} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}    \PYG{c+c1}{// Poner senhales internas en cero}
+            \PYG{p}{\PYGZob{}}\PYG{n}{cnt}\PYG{p}{,} \PYG{n}{done}\PYG{p}{,} \PYG{n}{checked}\PYG{p}{\PYGZcb{}} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}         \PYG{c+c1}{// Poner banderas en cero}
+            \PYG{p}{\PYGZob{}}\PYG{n}{clk\PYGZus{}out}\PYG{p}{,} \PYG{n}{clk\PYGZus{}div}\PYG{p}{\PYGZcb{}} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}           \PYG{c+c1}{// Poner el divisor de frecuencia en cero}
+            \PYG{n}{parity\PYGZus{}error} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}
+         \PYG{k}{end}
+       \PYG{n+nl}{DELAY:}
+         \PYG{k}{begin}
+            \PYG{n}{clk\PYGZus{}div} \PYG{o}{=} \PYG{n}{clk\PYGZus{}div} \PYG{o}{+} \PYG{l+m+mh}{1}\PYG{p}{;}            \PYG{c+c1}{// Divisor de frecuencia}
+            \PYG{k}{if} \PYG{p}{(}\PYG{n}{clk\PYGZus{}div} \PYG{o}{\PYGZgt{}=} \PYG{n+no}{DELAY\PYGZus{}TIME} \PYG{o}{\PYGZhy{}} \PYG{l+m+mh}{1}\PYG{p}{)}
+              \PYG{n}{clk\PYGZus{}out} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{;}
+         \PYG{k}{end}
+       \PYG{n+nl}{READ:}
+         \PYG{k}{begin}
+            \PYG{p}{\PYGZob{}}\PYG{n}{clk\PYGZus{}out}\PYG{p}{,} \PYG{n}{clk\PYGZus{}div}\PYG{p}{\PYGZcb{}} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}           \PYG{c+c1}{// Poner el divisor de frecuencia en cero}
+            \PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{[}\PYG{n}{cnt}\PYG{p}{]} \PYG{o}{=} \PYG{n}{RxD}\PYG{p}{;}           \PYG{c+c1}{// Guardar dato}
+
+            \PYG{n}{cnt} \PYG{o}{=} \PYG{n}{cnt} \PYG{o}{+} \PYG{l+m+mh}{1}\PYG{p}{;}
+            \PYG{k}{if} \PYG{p}{(}\PYG{n}{cnt} \PYG{o}{\PYGZgt{}} \PYG{n+no}{DATA\PYGZus{}LENGHT} \PYG{o}{+} \PYG{l+m+mh}{1}\PYG{p}{)}
+              \PYG{k}{begin}
+                 \PYG{n}{done} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{;}
+                 \PYG{n}{rdrf} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{;}
+                 \PYG{n}{cnt} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}
+                 \PYG{n}{rx\PYGZus{}data} \PYG{o}{=} \PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{[}\PYG{l+m+mh}{7}\PYG{o}{:}\PYG{l+m+mh}{0}\PYG{p}{];} \PYG{c+c1}{// Mover datos recibidos al registro Rx}
+                 \PYG{k}{if} \PYG{p}{(}\PYG{o}{\PYGZti{}}\PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{[}\PYG{l+m+mh}{9}\PYG{p}{])}        \PYG{c+c1}{// Chequeo de stop bit}
+                   \PYG{n+no}{FE} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{;}
+              \PYG{k}{end}
+         \PYG{k}{end}
+       \PYG{n+nl}{CHECK:}
+         \PYG{k}{begin}
+            \PYG{n}{ones} \PYG{o}{=} \PYG{n}{ones} \PYG{o}{+} \PYG{n}{rx\PYGZus{}data}\PYG{p}{[}\PYG{n}{cnt}\PYG{p}{];}
+            \PYG{n}{cnt} \PYG{o}{=} \PYG{n}{cnt} \PYG{o}{+} \PYG{l+m+mh}{1}\PYG{p}{;}
+            \PYG{k}{if} \PYG{p}{(}\PYG{n}{cnt} \PYG{o}{\PYGZgt{}} \PYG{n+no}{DATA\PYGZus{}LENGHT}\PYG{p}{)}
+              \PYG{k}{begin}
+                 \PYG{n}{checked} \PYG{o}{=} \PYG{l+m+mh}{1}\PYG{p}{;}
+                 \PYG{k}{if} \PYG{p}{(}\PYG{n}{parity} \PYG{o}{==} \PYG{l+m+mh}{2}\PYG{l+m+mb}{\PYGZsq{}b00} \PYG{o}{||} \PYG{n}{parity} \PYG{o}{==} \PYG{l+m+mh}{2}\PYG{l+m+mb}{\PYGZsq{}b11}\PYG{p}{)} \PYG{c+c1}{// No parity}
+                   \PYG{n}{parity\PYGZus{}error} \PYG{o}{=} \PYG{l+m+mh}{0}\PYG{p}{;}
+                 \PYG{k}{else} \PYG{k}{if} \PYG{p}{(}\PYG{n}{parity} \PYG{o}{==} \PYG{l+m+mh}{2}\PYG{l+m+mb}{\PYGZsq{}b01}\PYG{p}{)}               \PYG{c+c1}{// Even parity}
+                   \PYG{n}{parity\PYGZus{}error} \PYG{o}{=} \PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{[}\PYG{n+no}{DATA\PYGZus{}LENGHT}\PYG{p}{]} \PYG{o}{==} \PYG{p}{(}\PYG{n}{ones} \PYG{o}{\PYGZpc{}} \PYG{l+m+mh}{2}\PYG{p}{);}
+                 \PYG{k}{else}                                    \PYG{c+c1}{// Odd parity}
+                   \PYG{n}{parity\PYGZus{}error} \PYG{o}{=} \PYG{n}{rx\PYGZus{}data\PYGZus{}tmp}\PYG{p}{[}\PYG{n+no}{DATA\PYGZus{}LENGHT}\PYG{p}{]} \PYG{o}{==} \PYG{o}{\PYGZti{}}\PYG{p}{(}\PYG{n}{ones} \PYG{o}{\PYGZpc{}} \PYG{l+m+mh}{2}\PYG{p}{);}
+              \PYG{k}{end}
+         \PYG{k}{end}
+     \PYG{k}{endcase} \PYG{c+c1}{// case (currentState)}
+
+\PYG{k}{endmodule} \PYG{c+c1}{// receptor}
+\end{Verbatim}

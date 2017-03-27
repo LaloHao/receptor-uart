@@ -1,0 +1,77 @@
+m255
+K4
+z2
+13
+cModel Technology
+Z0 dE:/verif/t3
+!s112 0.1
+!i10d 8192
+!i10e 25
+!i10f 100
+T_opt
+VCzJzboP>F[BJa>6K^zbjQ3
+Z1 04 13 4 work receptor_Uart fast 0
+=1-0800274c5d48-56ca612e-1c6-d90
+Z2 o-quiet -auto_acc_if_foreign -work work +acc
+n@_opt
+Z3 OE;O;10.2c;57
+Z4 dE:/verif/t3
+!s110 1456103726
+T_opt1
+V>J=GmGOP5Pz1KVoM3moZ22
+R1
+=1-0800274c5d48-56cb83de-372-984
+o-quiet -auto_acc_if_foreign -work work
+n@_opt1
+R3
+R4
+!s110 1456178143
+T_opt2
+!s110 1456178194
+V=?i]4F_d59?OoGR<gPlCA3
+R1
+=1-0800274c5d48-56cb8412-dd-be8
+R2
+n@_opt2
+R3
+vreceptor
+I4B2eJM69?6O`C`V5Y:MGh2
+Z5 V`JN@9S9cnhjKRR_L]QIcM3
+Z6 dE:/verif/t5
+w1456173424
+8E:/verif/t5/receptor.v
+FE:/verif/t5/receptor.v
+L0 1
+Z7 OE;L;10.2c;57
+r1
+31
+Z8 o-work work -L mtiAvm -L mtiOvm -L mtiUvm -L mtiUPF
+!s100 bJFzZB1OH87V^k3bF9`3<1
+!s90 -reportprogress|300|-work|work|-vopt|E:/verif/t5/receptor.v|
+!s110 1456178122
+!i10b 1
+!s85 0
+!s108 1456178122.449000
+!s107 E:/verif/t5/receptor.v|
+!i111 0
+vreceptor_Uart
+IJ48VDaOD1MARe?8zP8Skn3
+R5
+R6
+w1456103337
+8E:/verif/t5/receptor_tb.v
+FE:/verif/t5/receptor_tb.v
+L0 1
+R7
+r1
+31
+R8
+nreceptor_@uart
+!s90 -reportprogress|300|-work|work|-vopt|E:/verif/t5/receptor_tb.v|
+!s110 1456103343
+!s100 ?o:L9FOWC9gz>O?V46ICi2
+!s108 1456103343.156000
+!s107 E:/verif/t5/receptor_tb.v|
+!i10b 1
+!s85 0
+!i111 0

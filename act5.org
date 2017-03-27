@@ -1,0 +1,130 @@
+#+INCLUDE: "/home/hao/dev/org/latex-plantilla/latex-default.org" :lines "-17"
+#+BEGIN_LaTeX
+  \tipo{Actividad 5}
+  \titulo{Receptor UART}
+  \materia{Verificacion de circuitos digitales}
+  \resumen{}
+#+END_LaTeX
+#+INCLUDE: "/home/hao/dev/org/latex-plantilla/latex-default.org" :lines "17-"
+
+* Objetivo
+  Implementar un receptor UART estándar RS-232 en lenguaje de
+  descripción de hardware (/verilog/) capaz de trabajar a 9600bps y
+  verificarlo.
+* Introducción
+  :PROPERTIES:
+  :ID:       ee9af60f-ed89-4c22-8d7b-e73cc7c9184d
+  :END:
+  La comunicacion serial requiere dos señales *TxD* y
+  *RxD*. Usualmente se utiliza un conector de 9 pines (Figura [[fig:port]]).
+
+  #+NAME: fig:port
+  #+CAPTION: Conector macho utilizado en el estandar RS-232
+  #+ATTR_LATEX: :width 7cm
+  [[file:data/ee/9af60f-ed89-4c22-8d7b-e73cc7c9184d/screenshot-20160222-135017.png]]
+
+  Los datos se transmiten a cierta velocidad conocida como *taza de
+  baudios* o *baud rate*. La velocidad esta dada en bits por segundo,
+  las mas comunes son 4800, 9600, 56000, 115200.
+
+  Existe ciertos bits /especiales/ utilizados para designar el inicio
+  y fin de la comunicación, como también lo hay para chequeo de
+  errores.
+
+  El bit de chequeo de error también se conoce como bit de paridad,
+  esta puede ser *par* o *impar* y se obtiene contando el numero de
+  *1* que contiene el dato, suponiendo que la paridad *par* esta
+  seleccionada y el numero de bits es impar entonces el bit de paridad
+  será 1. (Figura [[fig:paridad]])
+
+  #+CAPTION: Cálculo de paridad.
+  #+NAME: fig:paridad
+  [[file:data/ee/9af60f-ed89-4c22-8d7b-e73cc7c9184d/screenshot-20160222-140423.png]]
+
+  Una forma mas facil de calcular la paridad es aplicando el operador
+  modulo (Ecuación \ref{eq:paridad})
+
+  #+BEGIN_LaTeX
+  \begin{equation}\label{eq:paridad}
+  n\%2=p
+  \end{equation}
+  #+END_LaTeX
+
+  Sustituyendo $$n$$ (el conteo de bits) se obtiene una paridad $$p$$
+  que es *par*, para la *impar* solo se invierte el bit.
+
+  La transmisión serial se sincroniza con los bits de inicio y los de
+  fin, normalmente se utiliza el código ASCII para comunicarse. Un
+  ejemplo de transmision de la letra *T* en codigo ASCII se da en la
+  figura [[fig:T]].
+
+  #+CAPTION: ASCII 0x54 = 01010100 *T* enviado sin paridad.
+  #+NAME: fig:T
+  [[file:data/ee/9af60f-ed89-4c22-8d7b-e73cc7c9184d/screenshot-20160222-141608.png]]
+
+  #+CAPTION: ASCII 0x54 = 01010100 *T* con paridad *par*.
+  #+NAME: fig:Tpar
+  [[file:data/ee/9af60f-ed89-4c22-8d7b-e73cc7c9184d/screenshot-20160222-142005.png]]
+
+  #+CAPTION: ASCII 0x54 = 01010100 *T* con paridad *impar*.
+  #+NAME: fig:Timpar
+  [[file:data/ee/9af60f-ed89-4c22-8d7b-e73cc7c9184d/screenshot-20160222-142042.png]]
+  \newpage
+* Desarrollo
+  :PROPERTIES:
+  :ID:       8df3fe04-f74c-41ea-a9f8-72c4f5d1492c
+  :END:
+
+  Los datos entran de forma serial en *RxD* en cada ciclo de lectura y
+  se pasan al registro *rx_data*, al finalizar la recepción tambien se
+  activa el bit *rdrf* (/received data ready flag/).
+
+  #+CAPTION: Diagrama de bloques del receptor UART.
+  #+ATTR_LATEX: :width 7cm
+  [[file:data/8d/f3fe04-f74c-41ea-a9f8-72c4f5d1492c/screenshot-20160222-142235.png]]
+
+  El modulo se implementa como una maquina de estados, como se
+  muestra en la figura [[fig:estados]].
+
+  #+CAPTION: Diagrama de estados del receptor UART.
+  #+NAME: fig:estados
+  #+ATTR_LATEX: :width 7cm
+  [[file:estados.png]]
+
+  El reloj funciona a una velocidad de 50Mhz, por lo que se utiliza un
+  retraso (delay) para sincronizar la señal a 9600bps diviendo el
+  reloj de 50Mhz entre 5208.
+
+  #+BEGIN_LaTeX
+  $$\frac{50,000,000}{5208}=9600.61443932$$
+  #+END_LaTeX
+
+  Durante el estado de inicio o reposo, la entrada *RxD* esta en
+  /alto/, la comunicación empieza cuando *RxD* cambia a /bajo/ o
+  $$0$$.
+
+  #+CAPTION:
+  [[file:data/8d/f3fe04-f74c-41ea-a9f8-72c4f5d1492c/screenshot-20160222-154830.png]]
+
+  A partir de ese momento se va al estado de espera (/delay/) hasta
+  que transcurre el tiempo suficiente y empiece a recibir el primer
+  dato, se repite el ciclo delay-recepción hasta que recibe todos los
+  bits de datos, paridad y stop.
+
+  En verilog se utilizaron 2 bloques =always=, el primero para manejar
+  la transición de estados y el segundo para dirigir las señales y
+  realizar las operaciones pertinentes.
+* Resultados
+  :PROPERTIES:
+  :ID:       7764c860-a96e-4031-b810-d94c6a7782e1
+  :END:
+
+  #+CAPTION: Modulo receptor en funcionamiento.
+  [[file:data/77/64c860-a96e-4031-b810-d94c6a7782e1/screenshot-20160222-160429.png]]
+* Conclusiones
+  La verificación es una tarea esencial en el diseño de circuitos, en
+  este caso tuvo mayor complejidad que las tareas anteriores y se notó
+  que el uso de scripts pudieron haber facilitado la tarea.
+* Apéndice
+** Código fuente
+   #+INCLUDE: "receptor.v" src verilog
